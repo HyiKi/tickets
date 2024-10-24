@@ -101,7 +101,6 @@ async fn get_info_html(
     address: String,
 ) -> Result<String, Box<dyn Error>> {
     let url = format!("https://detail.damai.cn/item.htm?id={}", itemid);
-
     // let mut headers = get_common_headers();
     let mut headers = HeaderMap::new();
     headers.insert("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36".parse().unwrap());

@@ -66,7 +66,6 @@ async function getProductInfo() {
         const doc = parser.parseFromString(html, 'text/html');
         const staticData = JSON.parse(doc.getElementById('staticDataDefault').innerHTML);
         const item = JSON.parse(doc.getElementById('dataDefault').innerHTML);
-        productInfo.value = { "staticData": staticData, "item": item , "t": staticData.t}
         if (Array.isArray(parseData.ret) && parseData.ret.length) {
             const message = parseData.ret[0];
 
@@ -80,14 +79,17 @@ async function getProductInfo() {
 
                 if (result.item.buyBtnStatus === "303") {
                     // 下架
+                    console.log(result);
                     Message.warning(`商品已下架`);
                     return;
                 } else if (result.item.buyBtnStatus === "100") {
                     // 不支持该渠道
+                    console.log(result);
                     Message.error(joinMsg([result.item.buyBtnText, result.item.buyBtnTips]))
                     return
                 } else if (result.item.buyBtnStatus === "106") {
                     // 即将开抢
+                    console.log(result);
                     countDownVal.value = Number(result.item.sellStartTime);
 
                     // 如果预售的商品开售，则直接显示购买
@@ -98,7 +100,20 @@ async function getProductInfo() {
                         isPreSell.value = false
                     }
                 }
+                const performBases = ref(null);
+                if (item && item.performBases && item.performBases.length > 0) {
+                    performBases.value = item.performBases;
+                }
+                else if (item && item.calendarPerforms && item.calendarPerforms.length > 0) {
+                    performBases.value = item.calendarPerforms[0].performBases;
+                } else {
+                    // 无可售日期
+                    console.log(item);
+                    Message.warning(`无可售日期`);
+                    return;
+                }
                 // productInfo.value = result;
+                productInfo.value = {"staticData": staticData, "item": item , "t": staticData.t, "performBases": performBases}
             }
         } else {
             Message.error("获取商品详情失败");
@@ -451,7 +466,7 @@ async function playAudio() {
 
                     <h4>场次</h4>
                     <div class="ticket-list">
-                        <div :key="index" v-for="(item, index) in productInfo.item.calendarPerforms[0].performBases"
+                        <div :key="index" v-for="(item, index) in productInfo.performBases"
                             class="ticket-item" @click="getSkuInfo(item)">
                             <div class="ticket-item-head">
                                 {{ item.name }}
