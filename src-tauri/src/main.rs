@@ -196,7 +196,8 @@ async fn get_ticket_detail_res(
     is_proxy: bool,
     address: String,
 ) -> Result<String, Box<dyn Error>> {
-    let url = format!("https://mtop.damai.cn/h5/mtop.damai.trade.order.build.h5/1.0/?jsv=2.7.2&appKey=12574478&t={}&sign={}&type=originaljson&dataType=json&v=1.0&H5Request=true&AntiCreep=true&AntiFlood=true&api=mtop.damai.trade.order.build.h5&method=POST&ttid=%23t%23ip%23%23_h5_2014&globalCode=ali.china.damai&tb_eagleeyex_scm_project=20190509-aone2-join-test", t, sign);
+    // let url = format!("https://mtop.damai.cn/h5/mtop.damai.trade.order.build.h5/1.0/?jsv=2.7.2&appKey=12574478&t={}&sign={}&type=originaljson&dataType=json&v=1.0&H5Request=true&AntiCreep=true&AntiFlood=true&api=mtop.damai.trade.order.build.h5&method=POST&ttid=%23t%23ip%23%23_h5_2014&globalCode=ali.china.damai&tb_eagleeyex_scm_project=20190509-aone2-join-test", t, sign);
+    let url = format!("https://mtop.damai.cn/h5/mtop.trade.order.build.h5/4.0/?jsv=2.7.2&appKey=12574478&t={}&sign={}&type=originaljson&dataType=json&v=4.0&H5Request=true&AntiCreep=true&AntiFlood=true&api=mtop.trade.order.build.h5&method=POST&ttid=%23t%23ip%23%23_h5_2014&globalCode=ali.china.damai&tb_eagleeyex_scm_project=20190509-aone2-join-test", t, sign);
     let mut params = HashMap::new();
     params.insert("data", data);
     params.insert("bx-ua", ua);
@@ -249,7 +250,9 @@ async fn create_order_res(
     is_proxy: bool,
     address: String,
 ) -> Result<String, Box<dyn Error>> {
-    let url = format!("https://mtop.damai.cn/h5/mtop.damai.trade.order.create.h5/1.0/?jsv=2.7.2&appKey=12574478&t={}&sign={}&v=1.0&post=1&type=originaljson&timeout=15000&dataType=json&isSec=1&ecode=1&AntiCreep=true&ttid=%23t%23ip%23%23_h5_2014&globalCode=ali.china.damai&tb_eagleeyex_scm_project=20190509-aone2-join-test&H5Request=true&api=mtop.damai.trade.order.create.h5&{}", t, sign, submitref);
+    // let url = format!("https://mtop.damai.cn/h5/mtop.damai.trade.order.create.h5/1.0/?jsv=2.7.2&appKey=12574478&t={}&sign={}&v=1.0&post=1&type=originaljson&timeout=15000&dataType=json&isSec=1&ecode=1&AntiCreep=true&ttid=%23t%23ip%23%23_h5_2014&globalCode=ali.china.damai&tb_eagleeyex_scm_project=20190509-aone2-join-test&H5Request=true&api=mtop.damai.trade.order.create.h5&{}", t, sign, submitref);
+
+    let url = format!("https://mtop.damai.cn/h5/mtop.trade.order.create.h5/4.0/?jsv=2.7.2&appKey=12574478&t={}&sign={}&v=4.0&post=1&type=originaljson&timeout=15000&dataType=json&isSec=1&ecode=1&AntiCreep=true&ttid=%23t%23ip%23%23_h5_2014&globalCode=ali.china.damai&tb_eagleeyex_scm_project=20190509-aone2-join-test&H5Request=true&api=mtop.trade.order.create.h5&{}", t, sign, submitref);
 
     let mut headers = get_common_headers();
     headers.insert(

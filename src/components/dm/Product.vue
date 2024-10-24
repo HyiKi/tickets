@@ -170,7 +170,9 @@ async function getOrderDetail(item) {
     const data = `{"buyNow":true,"exParams":"{\\"channel\\":\\"damai_app\\",\\"damai\\":\\"1\\",\\"umpChannel\\":\\"100031004\\",\\"subChannel\\":\\"damai@damaih5_h5\\",\\"atomSplit\\":1,\\"signKey\\":\\"${item.signKey}\\",\\"rtc\\":1,\\"serviceVersion\\":\\"2.0.0\\",\\"customerType\\":\\"default\\"}","buyParam":"${item.itemId}_${form.value.num}_${item.skuId}","dmChannel":"damai@damaih5_h5"}`;
 
     const [t, sign] = getSign(data, form.value.token);
-    const [ua, umidtoken] = await getUA();
+    // const [ua, umidtoken] = await getUA();
+    const [ua, umidtoken] = getHeaderUaAndUmidtoken();
+    console.log(ua, umidtoken)
 
     try {
         log.save(log.getTemplate('tip', '获取订单详情'))
@@ -237,8 +239,9 @@ const currentRetryCount = ref(0)
 // 下订单（对应提交订单按钮）
 async function createOrder(data, submitref) {
     const [t, sign] = getSign(data, form.value.token);
-    const [ua, umidtoken] = getUA();
-
+    // const [ua, umidtoken] = await getUA();
+    const [ua, umidtoken] = getHeaderUaAndUmidtoken();
+    console.log(ua, umidtoken)
     let lastData = encode({
         data
     })
