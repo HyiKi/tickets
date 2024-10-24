@@ -1,5 +1,17 @@
 import { Message } from "@arco-design/web-vue";
 
+export async function getUA() {
+    return new Promise((resolve, reject) => {
+        window.AWSC.use("uab", function(e, i) {
+            if ("loaded" === e) {
+                resolve(i.getUA());
+            } else {
+                reject(new Error("Failed to load AWS Cognito User Agent Banner"));
+            }
+        });
+    });
+}
+
 export function getSign(data, token) {
     var u = "12574478",
         s = new Date().getTime(),

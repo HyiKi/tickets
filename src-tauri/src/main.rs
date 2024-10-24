@@ -25,6 +25,20 @@ async fn get_product_info(
     }
 }
 
+#[tauri::command]
+async fn get_product_info_html(
+    itemid: &str,
+    cookie: &str,
+    is_proxy: bool,
+    address: String,
+) -> Result<String, ()> {
+    let res = get_info_html(itemid, cookie, is_proxy, address).await;
+    match res {
+        Ok(s) => Ok(s),
+        Err(e) => Ok(e.to_string()),
+    }
+}
+
 fn get_common_headers() -> HeaderMap {
     let mut headers = HeaderMap::new();
 
@@ -45,7 +59,7 @@ fn get_common_headers() -> HeaderMap {
     headers.insert("sec-fetch-dest", "empty".parse().unwrap());
     headers.insert("sec-fetch-mode", "cors".parse().unwrap());
     headers.insert("sec-fetch-site", "same-site".parse().unwrap());
-    headers.insert("user-agent", "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36".parse().unwrap());
+    headers.insert("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36".parse().unwrap());
 
     headers
 }
@@ -65,6 +79,32 @@ async fn get_info(
         "content-type",
         "application/x-www-form-urlencoded".parse().unwrap(),
     );
+    headers.insert(header::COOKIE, cookie.parse().unwrap());
+
+    let client = ProxyBuilder::new(is_proxy, address).get_client()?;
+    let res = client
+        .get(url)
+        .headers(headers)
+        .timeout(Duration::from_secs(3))
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    Ok(res)
+}
+
+async fn get_info_html(
+    itemid: &str,
+    cookie: &str,
+    is_proxy: bool,
+    address: String,
+) -> Result<String, Box<dyn Error>> {
+    let url = format!("https://detail.damai.cn/item.htm?id={}", itemid);
+
+    // let mut headers = get_common_headers();
+    let mut headers = HeaderMap::new();
+    headers.insert("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36".parse().unwrap());
     headers.insert(header::COOKIE, cookie.parse().unwrap());
 
     let client = ProxyBuilder::new(is_proxy, address).get_client()?;
@@ -156,7 +196,7 @@ async fn get_ticket_detail_res(
     is_proxy: bool,
     address: String,
 ) -> Result<String, Box<dyn Error>> {
-    let url = format!("https://mtop.damai.cn/h5/mtop.trade.order.build.h5/4.0/?jsv=2.7.2&appKey=12574478&t={}&sign={}&type=originaljson&dataType=json&v=4.0&H5Request=true&AntiCreep=true&AntiFlood=true&api=mtop.trade.order.build.h5&method=POST&ttid=%23t%23ip%23%23_h5_2014&globalCode=ali.china.damai&tb_eagleeyex_scm_project=20190509-aone2-join-test", t, sign);
+    let url = format!("https://mtop.damai.cn/h5/mtop.damai.trade.order.build.h5/1.0/?jsv=2.7.2&appKey=12574478&t={}&sign={}&type=originaljson&dataType=json&v=1.0&H5Request=true&AntiCreep=true&AntiFlood=true&api=mtop.damai.trade.order.build.h5&method=POST&ttid=%23t%23ip%23%23_h5_2014&globalCode=ali.china.damai&tb_eagleeyex_scm_project=20190509-aone2-join-test", t, sign);
     let mut params = HashMap::new();
     params.insert("data", data);
     params.insert("bx-ua", ua);
@@ -209,7 +249,7 @@ async fn create_order_res(
     is_proxy: bool,
     address: String,
 ) -> Result<String, Box<dyn Error>> {
-    let url = format!("https://mtop.damai.cn/h5/mtop.trade.order.create.h5/4.0/?jsv=2.7.2&appKey=12574478&t={}&sign={}&v=4.0&post=1&type=originaljson&timeout=15000&dataType=json&isSec=1&ecode=1&AntiCreep=true&ttid=%23t%23ip%23%23_h5_2014&globalCode=ali.china.damai&tb_eagleeyex_scm_project=20190509-aone2-join-test&H5Request=true&api=mtop.trade.order.create.h5&{}", t, sign, submitref);
+    let url = format!("https://mtop.damai.cn/h5/mtop.damai.trade.order.create.h5/1.0/?jsv=2.7.2&appKey=12574478&t={}&sign={}&v=1.0&post=1&type=originaljson&timeout=15000&dataType=json&isSec=1&ecode=1&AntiCreep=true&ttid=%23t%23ip%23%23_h5_2014&globalCode=ali.china.damai&tb_eagleeyex_scm_project=20190509-aone2-join-test&H5Request=true&api=mtop.damai.trade.order.create.h5&{}", t, sign, submitref);
 
     let mut headers = get_common_headers();
     headers.insert(
@@ -292,6 +332,7 @@ fn main() {
         .plugin(tauri_plugin_sql::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             get_product_info,
+            get_product_info_html,
             get_ticket_list,
             get_ticket_detail,
             create_order,

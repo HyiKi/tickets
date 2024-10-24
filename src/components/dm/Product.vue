@@ -1,6 +1,7 @@
 <script setup lang="js">
 import { ref, reactive, computed, onMounted } from 'vue'
 import {
+    getUA,
     getSign,
     getHeaderUaAndUmidtoken,
     commonTip,
@@ -37,6 +38,7 @@ const lastCountDownVal = computed(() => countDownVal.value + timeFix.value)
 
 // 从 store 获取 form
 const form = computed(() => store.state.dm.form)
+// src/components/dm/Product.vue中的getProductInfo函数替换为访问请求https://detail.damai.cn/item.htm?id={}，获取其中的staticData和data，以productInfo.value = {"staticData": staticData, "item": item}保存，并将getSkuInfo中的performId修改为string类型
 async function getProductInfo() {
     const data = `{"itemId":"${form.value.itemId}","bizCode":"ali.china.damai","scenario":"itemsku","exParams":"{\\"dataType\\":4,\\"dataId\\":\\"\\",\\"privilegeActId\\":\\"\\"}","dmChannel":"damai@damaih5_h5"}`;
     const [t, sign] = getSign(data, form.value.token);
@@ -50,8 +52,21 @@ async function getProductInfo() {
             isProxy: form.value.isUseProxy,
             address: form.value.proxy,
         });
-
+        // console.log(res);
         const parseData = JSON.parse(res);
+
+        const html = await invoke("get_product_info_html", {
+            itemid: form.value.itemId,
+            cookie: form.value.cookie.trim(),
+            isProxy: form.value.isUseProxy,
+            address: form.value.proxy,
+        });
+        const parser = new DOMParser();
+        // console.log(html);
+        const doc = parser.parseFromString(html, 'text/html');
+        const staticData = JSON.parse(doc.getElementById('staticDataDefault').innerHTML);
+        const item = JSON.parse(doc.getElementById('dataDefault').innerHTML);
+        productInfo.value = { "staticData": staticData, "item": item , "t": staticData.t}
         if (Array.isArray(parseData.ret) && parseData.ret.length) {
             const message = parseData.ret[0];
 
@@ -83,7 +98,7 @@ async function getProductInfo() {
                         isPreSell.value = false
                     }
                 }
-                productInfo.value = result;
+                // productInfo.value = result;
             }
         } else {
             Message.error("获取商品详情失败");
@@ -106,7 +121,7 @@ async function getSkuInfo(item) {
         Message.error("场地信息或场次 id 获取错误，请重新获取商品信息");
         return;
     }
-    const performId = item.performs[0].performId
+    const performId = item.performs[0].performId.toString();
 
     const data = `{"itemId":"${form.value.itemId}","bizCode":"ali.china.damai","scenario":"itemsku","exParams":"{\\"dataType\\":2,\\"dataId\\":\\"${performId}\\",\\"privilegeActId\\":\\"\\"}","dmChannel":"damai@damaih5_h5"}`;
     const [t, sign] = getSign(data, form.value.token);
@@ -142,10 +157,10 @@ async function getSkuInfo(item) {
     }
 }
 
-function saveSku(item, performId) {
+function saveSku(item, performId, t) {
     activeSku.value = {
         ...item,
-        signKey: skuInfo[performId].itemBasicInfo.t
+        signKey: t
     }
 }
 
@@ -155,7 +170,7 @@ async function getOrderDetail(item) {
     const data = `{"buyNow":true,"exParams":"{\\"channel\\":\\"damai_app\\",\\"damai\\":\\"1\\",\\"umpChannel\\":\\"100031004\\",\\"subChannel\\":\\"damai@damaih5_h5\\",\\"atomSplit\\":1,\\"signKey\\":\\"${item.signKey}\\",\\"rtc\\":1,\\"serviceVersion\\":\\"2.0.0\\",\\"customerType\\":\\"default\\"}","buyParam":"${item.itemId}_${form.value.num}_${item.skuId}","dmChannel":"damai@damaih5_h5"}`;
 
     const [t, sign] = getSign(data, form.value.token);
-    const [ua, umidtoken] = getHeaderUaAndUmidtoken();
+    const [ua, umidtoken] = await getUA();
 
     try {
         log.save(log.getTemplate('tip', '获取订单详情'))
@@ -222,7 +237,7 @@ const currentRetryCount = ref(0)
 // 下订单（对应提交订单按钮）
 async function createOrder(data, submitref) {
     const [t, sign] = getSign(data, form.value.token);
-    const [ua, umidtoken] = getHeaderUaAndUmidtoken();
+    const [ua, umidtoken] = getUA();
 
     let lastData = encode({
         data
@@ -433,15 +448,15 @@ async function playAudio() {
 
                     <h4>场次</h4>
                     <div class="ticket-list">
-                        <div :key="index" v-for="(item, index) in productInfo.item.performBases" class="ticket-item"
-                            @click="getSkuInfo(item)">
+                        <div :key="index" v-for="(item, index) in productInfo.item.calendarPerforms[0].performBases"
+                            class="ticket-item" @click="getSkuInfo(item)">
                             <div class="ticket-item-head">
                                 {{ item.name }}
 
                                 <a-tag v-if="item.performBaseTagDesc" :color="item.performBaseTagDesc === '无票'
-            ? '#f53f3f'
-            : ''
-            ">
+                                    ? '#f53f3f'
+                                    : ''
+                                    ">
                                     {{ item.performBaseTagDesc }}
                                 </a-tag>
                             </div>
@@ -449,20 +464,20 @@ async function playAudio() {
                             <div class="sku" v-if="skuInfo[item.performs[0].performId]">
                                 <h4>票档</h4>
                                 <div class="sku-item" :class="{
-            'active-sku':
-                activeSku &&
-                activeSku.skuId === sku.skuId,
-        }" :key="idx" v-for="(sku, idx) in skuInfo[
-                item.performs[0].performId
-            ].perform.skuList" @click="saveSku(sku, item.performs[0].performId)">
+                                    'active-sku':
+                                        activeSku &&
+                                        activeSku.skuId === sku.skuId,
+                                }" :key="idx" v-for="(sku, idx) in skuInfo[
+            item.performs[0].performId
+        ].perform.skuList" @click="saveSku(sku, item.performs[0].performId, productInfo.t)">
                                     <div>{{ sku.priceName }}</div>
                                     <div>{{ sku.price }}</div>
                                     <div class="tag" v-if="Array.isArray(sku.tags) &&
-            sku.tags.length
-            ">
+                                        sku.tags.length
+                                    ">
                                         <a-tag color="#f53f3f">{{
-            sku.tags[0].tagDesc
-        }}</a-tag>
+                                            sku.tags[0].tagDesc
+                                            }}</a-tag>
                                     </div>
                                 </div>
                             </div>
